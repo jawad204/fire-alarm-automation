@@ -1,0 +1,79 @@
+{
+  "customer_name": "AL ISRA CONTRACTINa",
+  "project_name": "Damac Smart Heights Entrance",
+  "quotation_ref": "239588",
+  "value": 15750,
+  "payment_term": "advance",
+  "line_items": [
+    {
+      "sl": "01",
+      "description": "Supply of Smoke Detector (SIGA-OSD)",
+      "qty": "02",
+      "unit_price": 545,
+      "total_price": 1090
+    },
+    {
+      "sl": "02",
+      "description": "Supply of Standard Base (SIGA-SB)",
+      "qty": "02",
+      "unit_price": 95,
+      "total_price": 190
+    },
+    {
+      "sl": "03",
+      "description": "Supply of Speaker",
+      "qty": "01",
+      "unit_price": 440,
+      "total_price": 440
+    },
+    {
+      "sl": "04",
+      "description": "Supply of Back Box",
+      "qty": "01",
+      "unit_price": 80,
+      "total_price": 80
+    },
+    {
+      "sl": "05",
+      "description": "Supply of LED Indicator",
+      "qty": "01",
+      "unit_price": 220,
+      "total_price": 220
+    },
+    {
+      "sl": "06",
+      "description": "Relocation of LED Indicator",
+      "qty": "07",
+      "unit_price": 245,
+      "total_price": 1715
+    },
+    {
+      "sl": "07",
+      "description": "Relocation of Speaker",
+      "qty": "04",
+      "unit_price": 245,
+      "total_price": 980
+    },
+    {
+      "sl": "08",
+      "description": "Relocation of Smoke Detector",
+      "qty": "13",
+      "unit_price": 245,
+      "total_price": 3185
+    },
+    {
+      "sl": "09",
+      "description": "Installation of the above",
+      "qty": "Lot",
+      "unit_price": null,
+      "total_price": 5450
+    },
+    {
+      "sl": "10",
+      "description": "Testing, Commissioning & Programming",
+      "qty": "Lot",
+      "unit_price": null,
+      "total_price": 2750
+    }
+  ]
+}
