@@ -1,13 +1,15 @@
 """
 Step 1 of 2 - read a fire alarm quotation PDF and SAVE the result as JSON.
 
-    python extract_quotation.py 1942.pdf 1 2
+    python extract_quotation.py 1942.pdf
 
-Arguments: the PDF, then the 0-based page numbers holding the cover letter
-and the Bill of Quantities. Writes 1942.json next to the PDF.
+Sends every page of the PDF - no one has to know or pass which page holds
+the BOQ, since that differs between quotations. Writes 1942.json next to
+the PDF. Refuses anything over MAX_PAGES, on the assumption that a very
+long file is a whole job bundle rather than a single quotation.
 
-If you run it with no arguments it falls back to the DEFAULT_PDF and
-DEFAULT_PAGES below, so the VS Code play button also works.
+If you run it with no arguments it falls back to DEFAULT_PDF, so the VS
+Code play button also works.
 
 This script knows nothing about Excel. It reads a page and writes a file.
 
@@ -27,17 +29,28 @@ import os
 import pathlib
 import re
 import sys
-import pymupdf as fitz
+
 import fitz
 from anthropic import Anthropic
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# Baked in so the built .exe works with no setup on the machine it runs on.
+# Anyone who unpacks the .exe could in principle recover this string - that
+# trade-off is fine for a program handed to one person you trust, not for
+# wide distribution. An ANTHROPIC_API_KEY set in the environment always
+# wins over this, so your own dev machine keeps using its own key.
+BAKED_API_KEY = "REDACTED"
+
+
 MODEL = "claude-sonnet-5"
 
-DEFAULT_PDF = "C:/Users/jawad/OneDrive/Desktop/1942.pdf"
-DEFAULT_PAGES = [1, 2]        # 0-based: cover letter page, BOQ page
+DEFAULT_PDF = "1942.pdf"
+
+MAX_PAGES = 12   # a normal quotation is 2-6 pages; more than this is
+                 # probably a whole job bundle, not a quotation - refuse
+                 # rather than pay to read 11 irrelevant pages.
 
 PROMPT = """These pages are a fire alarm quotation. Extract the following.
 
@@ -61,6 +74,26 @@ Do not filter or interpret them.
 
 Return ONLY a JSON object. No explanation, no markdown.
 If a field is not present, use null. Never guess a value."""
+
+
+def all_pages(path, limit=MAX_PAGES):
+    """Every page of the PDF, 0-based. No one has to know or supply which
+    page holds the BOQ - the model looks at all of them and works it out.
+
+    Refuses anything unusually long: that is more likely a whole job bundle
+    (requisition, invoice, bank slip, quotation...) than a single quotation,
+    and reading it in full would be five times the cost for no benefit -
+    worse, it raises the odds of pulling a number off the wrong document.
+    """
+    doc = fitz.open(path)
+    count = len(doc)
+    doc.close()
+    if count > limit:
+        raise SystemExit(
+            f"{path} has {count} pages - that looks like a job bundle, "
+            f"not a single quotation. Split out just the quotation and retry."
+        )
+    return list(range(count))
 
 
 def page_images(path, pages, dpi=150):
@@ -99,7 +132,7 @@ def strip_fences(text):
 
 def extract(path, pages):
     """Send the pages to the model. Returns (data, usage)."""
-    client = Anthropic()
+    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or BAKED_API_KEY)
 
     resp = client.messages.create(
         model=MODEL,
@@ -133,15 +166,17 @@ if __name__ == "__main__":
     if not os.getenv("ANTHROPIC_API_KEY"):
         raise SystemExit("No API key found. Check your .env file.")
 
-    if len(sys.argv) >= 3:
+    if len(sys.argv) >= 2:
         pdf = sys.argv[1]
-        pages = [int(a) for a in sys.argv[2:]]
     else:
-        pdf, pages = DEFAULT_PDF, DEFAULT_PAGES
-        print(f"(no arguments given - using {pdf} pages {pages})")
+        pdf = DEFAULT_PDF
+        print(f"(no argument given - using {pdf})")
 
     if not pathlib.Path(pdf).exists():
         raise SystemExit(f"{pdf} not found in {pathlib.Path.cwd()}")
+
+    pages = all_pages(pdf)
+    print(f"(reading all {len(pages)} pages of {pdf})")
 
     data, usage = extract(pdf, pages)
 

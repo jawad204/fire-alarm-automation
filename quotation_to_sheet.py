@@ -1,4 +1,3 @@
-
 """
 Step 2 of 2 - read the JSON from extract_quotation.py, write the job row
 into the Excel sheet, and print the material requisition.
@@ -16,12 +15,13 @@ import json
 import pathlib
 import shutil
 import sys
+
 import openpyxl
 
 # ---------------------------------------------------------------- settings
 
-SHEET_IN = "C:/Users/jawad/OneDrive/Desktop/Fitout jobs sheet latest 22-12-2025.xlsx"
-SHEET_OUT = "test_sheet.xlsx"      # set equal to SHEET_IN once you trust it
+SHEET_IN = "D:/Projects/fire-alarm-automation/Fitout jobs sheet latest 22-12-2025.xlsx"
+SHEET_OUT = "D:/Projects/fire-alarm-automation/Fitout jobs sheet latest 22-12-2025.xlsx"      # set equal to SHEET_IN once you trust it
 TAB = "Sheet1"
 
 # 1-based column numbers in the sheet
@@ -86,16 +86,21 @@ def find_existing(ws, qref):
     return None
 
 
-def write_row(data, src, dst, tab):
+def write_row(data, src, dst, tab, date=None):
     """Write the job into the row below the last one that has a customer name.
 
     Scanning from the bottom matters: the sheet has a dozen historic gaps
     where a job number exists with no customer, and 'first empty row' would
     land in one of them.
 
+    date: pass the SAME date object used for the requisition PDF, so the
+    sheet row and the requisition can never disagree. Defaults to today.
+
     Returns (row, job_no), or (None, existing_row) if already processed.
     """
-    if src != dst:
+    date = date or datetime.date.today()
+
+    if src != dst and not pathlib.Path(dst).exists():
         shutil.copy(src, dst)
 
     wb = openpyxl.load_workbook(dst)
@@ -103,7 +108,7 @@ def write_row(data, src, dst, tab):
 
     existing = find_existing(ws, data["quotation_ref"])
     if existing is not None:
-        return None, existing
+        return None, ws.cell(existing, COL["job"]).value   # the real job number, not the row
 
     last = max(
         r for r in range(2, ws.max_row + 1)
@@ -117,11 +122,18 @@ def write_row(data, src, dst, tab):
     ws.cell(row, COL["customer"]).value = data["customer_name"]
     ws.cell(row, COL["project"]).value = data["project_name"]
     ws.cell(row, COL["qref"]).value = int(qref) if str(qref).isdigit() else qref
-    ws.cell(row, COL["date"]).value = datetime.date.today()   # the day payment landed
+    ws.cell(row, COL["date"]).value = date
     ws.cell(row, COL["value"]).value = data["value"]
     ws.cell(row, COL["payment"]).value = data["payment_term"]
 
-    wb.save(dst)
+    try:
+        wb.save(dst)
+    except PermissionError:
+        raise SystemExit(
+            f"Could not write to {dst}.\n"
+            "The file is open in Excel. Close it and run again."
+        )
+
     return row, job_no
 
 
