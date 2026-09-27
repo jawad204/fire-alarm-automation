@@ -11,3 +11,4 @@ __pycache__/
 
 # Qdrant local storage, if you ever switch off Docker
 qdrant_storage/
+dist/
