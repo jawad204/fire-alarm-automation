@@ -3,7 +3,8 @@
 
 # virtual environment
 .venv/
-
+dist/
+requisitions/
 # python
 __pycache__/
 *.py[cod]
